@@ -1,68 +1,70 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-      <TargetFrameworks>net462;net472;net48;net7.0</TargetFrameworks>
-      <Configurations>Debug;Release;ProdDebug</Configurations>
-      <LangVersion>10</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ProjectGuid>{B9037ADE-F787-431B-B309-46219A06BF79}
-  </ProjectGuid>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-    <PackageId>TCore.Sql</PackageId>
-    <Authors>Robert Little</Authors>
-    <Company>Robert Little</Company>
-    <Product>TCore.Sql</Product>
-    <Description>Layer provides Sql query support on top of Microsoft.Data.SqlClient. Provides generic query building, transaction wrapping, and reading query results into obejcts.</Description>
-    <RepositoryUrl>https://github.com/rlittletht/TCore.Core.Sql</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/rlittletht/TCore.Core.Sql/blob/master/LICENSE</PackageLicenseUrl>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <AssemblyVersion>2.2.4.0</AssemblyVersion>
-    <FileVersion>2.2.4.0</FileVersion>
-    <PackageReleaseNotes>
-    </PackageReleaseNotes>
-    <Version>2.2.4</Version>
-    <ApplicationIcon />
-    <OutputType>Library</OutputType>
-    <StartupObject />
-    <IncludeSymbols>False</IncludeSymbols>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ProdDebug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-    <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-    <ItemGroup>
-      <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
-      <PackageReference Include="NUnit" Version="3.12.0" />
-      <PackageReference Include="TCore.Exceptions" Version="1.1.0" />
-      <PackageReference Include="TCore.StatusResult" Version="2.0.0" />
-    </ItemGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net48;net7.0;net8.0</TargetFrameworks>
+		<Configurations>Debug;Release;ProdDebug</Configurations>
+		<LangVersion>12</LangVersion>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<PropertyGroup>
+		<ProjectGuid>
+			{B9037ADE-F787-431B-B309-46219A06BF79}
+		</ProjectGuid>
+		<FileAlignment>512</FileAlignment>
+		<TargetFrameworkProfile />
+		<NuGetPackageImportStamp>
+		</NuGetPackageImportStamp>
+		<PackageId>TCore.SqlClient</PackageId>
+		<Authors>Robert Little</Authors>
+		<Company>Robert Little</Company>
+		<Product>TCore.SqlClient</Product>
+		<Description>Layer provides Sql Client implementation on top of Microsoft.Data.SqlClient. </Description>
+		<RepositoryUrl>https://github.com/rlittletht/TCore.Sql</RepositoryUrl>
+		<PackageLicenseUrl>https://github.com/rlittletht/TCore.Core.Sql/blob/master/LICENSE</PackageLicenseUrl>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageReleaseNotes>
+		</PackageReleaseNotes>
+		<Version>1.1.0.0</Version>
+		<ApplicationIcon />
+		<OutputType>Library</OutputType>
+		<StartupObject />
+		<IncludeSymbols>False</IncludeSymbols>
+		<Title>TCore Client implementation for SQL</Title>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>full</DebugType>
+		<Optimize>false</Optimize>
+		<OutputPath>bin\Debug\</OutputPath>
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<ErrorReport>prompt</ErrorReport>
+		<WarningLevel>4</WarningLevel>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ProdDebug|AnyCPU'">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>full</DebugType>
+		<Optimize>false</Optimize>
+		<OutputPath>bin\Debug\</OutputPath>
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<ErrorReport>prompt</ErrorReport>
+		<WarningLevel>4</WarningLevel>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+		<DebugType>pdbonly</DebugType>
+		<Optimize>true</Optimize>
+		<OutputPath>bin\Release\</OutputPath>
+		<DefineConstants>TRACE</DefineConstants>
+		<ErrorReport>prompt</ErrorReport>
+		<WarningLevel>4</WarningLevel>
+	</PropertyGroup>
+	<ItemGroup>
+		<Folder Include="Properties\" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
+		<PackageReference Include="NUnit" Version="3.12.0" />
+		<PackageReference Include="TCore.SqlCore" Version="1.1.0" />
+		<PackageReference Include="TCore.StatusResult" Version="2.0.0" />
+	</ItemGroup>
 </Project>
