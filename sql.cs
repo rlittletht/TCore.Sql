@@ -26,7 +26,7 @@ public interface IQueryResult
 
 public class Sql: ISql
 {
-    public SqlConnection Connection => m_connection ?? throw new SqlExceptionNoConnection();
+    SqlConnection Connection => m_connection ?? throw new SqlExceptionNoConnection();
     public ISqlTransaction? Transaction => m_transaction;
     public bool InTransaction => m_transaction != null;
 
@@ -64,7 +64,7 @@ public class Sql: ISql
         %%Function: SrSetupStaticSql
         %%Qualified: TCore.Sql.SrSetupStaticSql
     ----------------------------------------------------------------------------*/
-    public static Sql SetupStaticSql(Sql? sqlIn, string sResourceConnString, out bool fLocalSql)
+    public static ISql SetupStaticSql(ISql? sqlIn, string sResourceConnString, out bool fLocalSql)
     {
         fLocalSql = false;
 
@@ -81,17 +81,20 @@ public class Sql: ISql
         %%Function: SrReleaseStaticSql
         %%Qualified: TCore.Sql.SrReleaseStaticSql
     ----------------------------------------------------------------------------*/
-    public static void ReleaseStaticSql(ref Sql sql, bool fLocalSql)
+    public static void ReleaseStaticSql(ref ISql? sql, bool fLocalSql)
     {
         if (fLocalSql)
-            sql.Close();
+        {
+            sql?.Close();
+            sql = null;
+        }
     }
 
     /*----------------------------------------------------------------------------
         %%Function: Close
         %%Qualified: TCore.Sql.Close
     ----------------------------------------------------------------------------*/
-    public void Close()
+    private void Close()
     {
         if (InTransaction)
             throw new SqlExceptionNotInTransaction("can't close with pending transaction");
@@ -99,6 +102,8 @@ public class Sql: ISql
         m_connection!.Close();
         m_connection.Dispose();
     }
+
+    void ISql.Close() => Close();
 
     #endregion
 
@@ -108,7 +113,7 @@ public class Sql: ISql
         %%Qualified: TCore.Sql.ExecuteNonQuery
     ----------------------------------------------------------------------------*/
     public static void ExecuteNonQuery(
-        Sql sql,
+        ISql sql,
         SqlCommandTextInit cmdText,
         string sResourceConnString,
         CustomizeCommandDelegate? customizeParams = null)
@@ -123,7 +128,7 @@ public class Sql: ISql
         Execute the given non query.  There is only a failed/success response
     ----------------------------------------------------------------------------*/
     private static void ExecuteNonQuery(
-        Sql? sql,
+        ISql? sql,
         string query,
         string sResourceConnString,
         CustomizeCommandDelegate? customizeParams = null,
@@ -206,7 +211,7 @@ public class Sql: ISql
     #region Execute Scalars
 
     private static int NExecuteScalar(
-        Sql sql,
+        ISql sql,
         SqlCommandTextInit cmdText,
         string sResourceConnString,
         int nDefaultValue)
@@ -219,7 +224,7 @@ public class Sql: ISql
         %%Qualified: TCore.Sql.NExecuteScalar
     ----------------------------------------------------------------------------*/
     private static int NExecuteScalar(
-        Sql sql,
+        ISql? sql,
         string s,
         string sResourceConnString,
         int nDefaultValue,
@@ -229,7 +234,7 @@ public class Sql: ISql
         {
             sql = SetupStaticSql(sql, sResourceConnString, out bool fLocalSql);
 
-            int nRet = sql.NExecuteScalar(s, aliases);
+            int nRet = sql.NExecuteScalar(new SqlCommandTextInit(s, aliases));
             ReleaseStaticSql(ref sql, fLocalSql);
 
             return nRet;
@@ -385,11 +390,21 @@ public class Sql: ISql
     #endregion
 
 
+    ISqlReader ISql.CreateReader()
+    {
+        return new SqlReader(this);
+    }
+
     /*----------------------------------------------------------------------------
         %%Function: CreateCommand
         %%Qualified: TCore.Sql.CreateCommand
     ----------------------------------------------------------------------------*/
     public ISqlCommand CreateCommand()
+    {
+        return CreateCommandInternal();
+    }
+
+    public SqlCommand CreateCommandInternal()
     {
         return new SqlCommand(Connection.CreateCommand());
     }
@@ -412,85 +427,23 @@ public class Sql: ISql
     #region Queries
 
     /*----------------------------------------------------------------------------
-        %%Function: ExecuteQuery
-        %%Qualified: TCore.Sql.ExecuteQuery
+        %%Function: ExecuteDelegatedQuery
+        %%Qualified: TCore.Sql.SqlClient.Sql.ExecuteDelegatedQuery<T>
     ----------------------------------------------------------------------------*/
-    private static void ExecuteQuery(
-        string sQuery,
-        IQueryResult iqr,
-        string sResourceConnString, 
-        TableAliases? aliases = null)
-    {
-        Sql sql = Sql.OpenConnection(sResourceConnString);
-
-        ExecuteQuery(sql, sQuery, iqr, sResourceConnString, aliases);
-    }
-
-    /*----------------------------------------------------------------------------
-        %%Function: ExecuteQuery
-        %%Qualified: TCore.Sql.ExecuteQuery
-
-        Execute the given query and send the results to IQueryResult...
-    ----------------------------------------------------------------------------*/
-    private static void ExecuteQuery(
-        Sql sql,
-        string sQuery,
-        IQueryResult iqr,
-        string sResourceConnString,
-        TableAliases? aliases = null,
-        CustomizeCommandDelegate? customizeDelegate = null)
-    {
-        SqlReader sqlr;
-        int iRecordSet = 0;
-
-        sqlr = new SqlReader(sql);
-
-        sqlr.ExecuteQuery(sQuery, sResourceConnString, customizeDelegate, aliases);
-
-        do
-        {
-            while (sqlr.Reader.Read())
-            {
-                if (!iqr.FAddResultRow(sqlr, iRecordSet))
-                    throw new SqlCore.SqlException("FAddResultRow failed!");
-            }
-            iRecordSet++;
-        } while (sqlr.Reader.NextResult());
-
-        sqlr.Close();
-    }
-
-    /*----------------------------------------------------------------------------
-        %%Function: DoGenericQueryDelegateRead
-        %%Qualified: TCore.Sql.SqlClient.Sql.DoGenericQueryDelegateRead<T>
-    ----------------------------------------------------------------------------*/
-    public T DoGenericQueryDelegateRead<T>(
+    public T ExecuteDelegatedQuery<T>(
         Guid crids,
         string query,
         ISqlReader.DelegateReader<T> delegateReader,
         TableAliases? aliases = null,
         CustomizeCommandDelegate? customizeDelegate = null) where T : new()
     {
-        SqlSelect selectTags = new SqlSelect();
-
-        selectTags.AddBase(query);
-        if (aliases != null)
-            selectTags.AddAliases(aliases);
-
-        string sQuery = selectTags.ToString();
-
-        SqlReader? sqlr = null;
-
         if (delegateReader == null)
             throw new Exception("must provide delegate reader");
 
+        ISqlReader sqlr = ExecuteQuery(crids, query, aliases, customizeDelegate);
+
         try
         {
-            string sCmd = sQuery;
-
-            sqlr = new(this);
-            sqlr.ExecuteQuery(sQuery, null, customizeDelegate);
-
             T t = new();
             bool fOnce = false;
 
@@ -507,32 +460,66 @@ public class Sql: ISql
         }
         finally
         {
-            sqlr?.Close();
+            sqlr.Close();
         }
     }
 
     /*----------------------------------------------------------------------------
-        %%Function: DoGenericQueryDelegateRead
-        %%Qualified: TCore.SqlReader.DoGenericQueryDelegateRead<T>
-    ----------------------------------------------------------------------------*/
-    public T DoGenericMultiSetQueryDelegateRead<T>(
-        Guid crids,
-        string sQuery,
-        ISqlReader.DelegateMultiSetReader<T> delegateReader,
-        CustomizeCommandDelegate? customizeDelegate = null) where T : new()
-    {
-        SqlReader? reader = null;
+        %%Function: ExecuteQuery
+        %%Qualified: TCore.SqlClient.Sql.ExecuteQuery
 
-        if (delegateReader == null)
-            throw new Exception("must provide delegate reader");
+        Execute the given query and return an ISqlReader for it
+    ----------------------------------------------------------------------------*/
+    public ISqlReader ExecuteQuery(
+        Guid crids,
+        string query,
+        TableAliases? aliases = null,
+        CustomizeCommandDelegate? customizeDelegate = null)
+    {
+        SqlSelect selectTags = new SqlSelect();
+
+        selectTags.AddBase(query);
+        if (aliases != null)
+            selectTags.AddAliases(aliases);
+
+        string sQuery = selectTags.ToString();
+
+        SqlReader? sqlr = null;
 
         try
         {
             string sCmd = sQuery;
 
-            reader = new(this);
-            reader.ExecuteQuery(sQuery, null, customizeDelegate);
+            sqlr = new(this);
+            sqlr.ExecuteQuery(sQuery, null, customizeDelegate);
 
+            return sqlr;
+        }
+        catch
+        {
+            sqlr?.Close();
+            throw;
+        }
+    }
+
+    /*----------------------------------------------------------------------------
+        %%Function: ExecuteDelegatedQuery
+        %%Qualified: TCore.SqlReader.ExecuteDelegatedQuery<T>
+    ----------------------------------------------------------------------------*/
+    T ISql.ExecuteMultiSetDelegatedQuery<T>(
+        Guid crids,
+        string sQuery,
+        ISqlReader.DelegateMultiSetReader<T> delegateReader,
+        TableAliases? aliases = null,
+        CustomizeCommandDelegate? customizeDelegate = null) where T : new()
+    {
+        if (delegateReader == null)
+            throw new Exception("must provide delegate reader");
+
+        ISqlReader reader = ExecuteQuery(crids, sQuery, aliases, customizeDelegate);
+        
+        try
+        {
             int recordSet = 0;
 
             T t = new();
@@ -540,7 +527,7 @@ public class Sql: ISql
             {
                 bool fOnce = false;
 
-                while (reader.Reader.Read())
+                while (reader.Read())
                 {
                     delegateReader(reader, crids, recordSet, ref t);
                     fOnce = true;
@@ -550,13 +537,13 @@ public class Sql: ISql
                     throw new SqlExceptionNoResults();
 
                 recordSet++;
-            } while (reader.Reader.NextResult());
+            } while (reader.NextResult());
 
             return t;
         }
         finally
         {
-            reader?.Close();
+            reader.Close();
         }
     }
     #endregion

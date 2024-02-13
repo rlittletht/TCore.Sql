@@ -14,6 +14,8 @@ public class SqlReader: ISqlReader
 
     private SqlDataReader _Reader => m_reader ?? throw new Exception("no reader");
 
+    #region Constructors
+
     public SqlReader()
     {
         m_fAttached = false;
@@ -43,6 +45,7 @@ public class SqlReader: ISqlReader
         Attach(sql);
         m_crids = crids;
     }
+    #endregion
 
     /*----------------------------------------------------------------------------
         %%Function: Attach
@@ -93,12 +96,10 @@ public class SqlReader: ISqlReader
         if (m_sql == null)
             throw new SqlCore.SqlException("could not open sql connection");
 
-        SqlCommand sqlcmd = 
-            new(m_sql.Connection.CreateCommand())
-            {
-                CommandText = sQuery,
-                Transaction = m_sql.Transaction
-            };
+        SqlCommand sqlcmd = m_sql.CreateCommandInternal();
+
+        sqlcmd.CommandText = sQuery;
+        sqlcmd.Transaction = m_sql.Transaction;
 
         if (customizeDelegate != null)
             customizeDelegate(sqlcmd);
@@ -146,7 +147,7 @@ public class SqlReader: ISqlReader
 
         if (!m_fAttached)
         {
-            m_sql?.Close();
+            ((ISql?)m_sql)?.Close();
             m_sql = null;
         }
     }
