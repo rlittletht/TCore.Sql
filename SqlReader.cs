@@ -58,22 +58,6 @@ public class SqlReader: ISqlReader
             m_fAttached = true;
     }
 
-    public void ExecuteQuery(
-        SqlCommandTextInit cmdText,
-        string? sResourceConnString = null,
-        CustomizeCommandDelegate? customizeDelegate = null)
-    {
-        ExecuteQuery(cmdText.CommandText, sResourceConnString, customizeDelegate, cmdText.Aliases);
-    }
-
-    public void ExecuteQuery(
-        string sQuery,
-        CustomizeCommandDelegate? customizeDelegate = null,
-        TableAliases? aliases = null)
-    {
-        ExecuteQuery(sQuery, null, customizeDelegate, aliases);
-    }
-
     /*----------------------------------------------------------------------------
         %%Function: ExecuteQuery
         %%Qualified: TCore.SqlReader.ExecuteQuery
@@ -98,8 +82,8 @@ public class SqlReader: ISqlReader
 
         SqlCommand sqlcmd = m_sql.CreateCommandInternal();
 
-        sqlcmd.CommandText = sQuery;
-        sqlcmd.Transaction = m_sql.Transaction;
+        ((ISqlCommand)sqlcmd).CommandText = sQuery;
+        ((ISqlCommand)sqlcmd).Transaction = m_sql.Transaction;
 
         if (customizeDelegate != null)
             customizeDelegate(sqlcmd);
@@ -137,7 +121,7 @@ public class SqlReader: ISqlReader
         %%Function: Close
         %%Qualified: TCore.SqlReader.Close
     ----------------------------------------------------------------------------*/
-    public void Close()
+    void ISqlReader.Close()
     {
         if (m_reader != null)
         {
@@ -152,27 +136,27 @@ public class SqlReader: ISqlReader
         }
     }
 
-    public Int16 GetInt16(int index) => _Reader.GetInt16(index);
-    public Int32 GetInt32(int index) => _Reader.GetInt32(index);
-    public string GetString(int index) => _Reader.GetString(index);
-    public Guid GetGuid(int index) => _Reader.GetGuid(index);
-    public double GetDouble(int index) => _Reader.GetDouble(index);
-    public Int64 GetInt64(int index) => _Reader.GetInt64(index);
-    public DateTime GetDateTime(int index) => _Reader.GetDateTime(index);
+    Int16 ISqlReader.GetInt16(int index) => _Reader.GetInt16(index);
+    Int32 ISqlReader.GetInt32(int index) => _Reader.GetInt32(index);
+    string ISqlReader.GetString(int index) => _Reader.GetString(index);
+    Guid ISqlReader.GetGuid(int index) => _Reader.GetGuid(index);
+    double ISqlReader.GetDouble(int index) => _Reader.GetDouble(index);
+    Int64 ISqlReader.GetInt64(int index) => _Reader.GetInt64(index);
+    DateTime ISqlReader.GetDateTime(int index) => _Reader.GetDateTime(index);
 
-    public Int16? GetNullableInt16(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt16(index);
-    public Int32? GetNullableInt32(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt32(index);
-    public string? GetNullableString(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetString(index);
-    public Guid? GetNullableGuid(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetGuid(index);
-    public double? GetNullableDouble(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDouble(index);
-    public Int64? GetNullableInt64(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt64(index);
-    public DateTime? GetNullableDateTime(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDateTime(index);
+    Int16? ISqlReader.GetNullableInt16(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt16(index);
+    Int32? ISqlReader.GetNullableInt32(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt32(index);
+    string? ISqlReader.GetNullableString(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetString(index);
+    Guid? ISqlReader.GetNullableGuid(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetGuid(index);
+    double? ISqlReader.GetNullableDouble(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDouble(index);
+    Int64? ISqlReader.GetNullableInt64(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt64(index);
+    DateTime? ISqlReader.GetNullableDateTime(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDateTime(index);
 
-    public bool IsDBNull(int index) => _Reader.IsDBNull(index);
+    bool ISqlReader.IsDBNull(int index) => _Reader.IsDBNull(index);
 
-    public int GetFieldCount() => _Reader.FieldCount;
-    public string GetFieldName(int index) => _Reader.GetName(index);
-    public object GetNativeValue(int index) => _Reader.GetSqlValue(index);
+    int ISqlReader.GetFieldCount() => _Reader.FieldCount;
+    string ISqlReader.GetFieldName(int index) => _Reader.GetName(index);
+    object ISqlReader.GetNativeValue(int index) => _Reader.GetSqlValue(index);
 
     private static readonly Dictionary<Type, Type> s_mapAffinityTypes =
         new()
@@ -189,7 +173,7 @@ public class SqlReader: ISqlReader
             { typeof(Guid), typeof(string) }
         };
 
-    public Type GetFieldAffinity(int index)
+    Type ISqlReader.GetFieldAffinity(int index)
     {
         Type? type = _Reader.GetFieldType(index);
 
@@ -202,9 +186,9 @@ public class SqlReader: ISqlReader
         return typeof(void);
     }
 
-    public Type GetFieldType(int index) => _Reader.GetFieldType(index) ?? typeof(void);
+    Type ISqlReader.GetFieldType(int index) => _Reader.GetFieldType(index) ?? typeof(void);
 
-    public bool NextResult() => m_reader?.NextResult() ?? false;
-    public bool Read() => m_reader?.Read() ?? false;
+    bool ISqlReader.NextResult() => m_reader?.NextResult() ?? false;
+    bool ISqlReader.Read() => m_reader?.Read() ?? false;
     public SqlDataReader Reader => m_reader ?? throw new SqlExceptionNoReader();
 }

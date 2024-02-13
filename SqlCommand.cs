@@ -8,19 +8,19 @@ public class SqlCommand : ISqlCommand
     private readonly Microsoft.Data.SqlClient.SqlCommand m_command;
     private ISqlTransaction? m_transaction;
 
-    public string CommandText
+    string ISqlCommand.CommandText
     {
         get => m_command.CommandText;
         set => m_command.CommandText = value;
     }
 
-    public ISqlTransaction? Transaction
+    ISqlTransaction? ISqlCommand.Transaction
     {
         get => m_transaction;
         set => m_transaction = value;
     }
 
-    public ISqlReader ExecuteReader() => new SqlReader(m_command.ExecuteReader());
+    ISqlReader ISqlCommand.ExecuteReader() => new SqlReader(m_command.ExecuteReader());
 
     public SqlReader ExecuteReaderInternal() => new SqlReader(m_command.ExecuteReader());
 
@@ -29,13 +29,13 @@ public class SqlCommand : ISqlCommand
         m_command = command;
     }
 
-    public int ExecuteNonQuery() => m_command.ExecuteNonQuery();
+    int ISqlCommand.ExecuteNonQuery() => m_command.ExecuteNonQuery();
 
-    public object ExecuteScalar() => m_command.ExecuteScalar();
+    object ISqlCommand.ExecuteScalar() => m_command.ExecuteScalar();
 
-    public void AddParameterWithValue(string parameterName, object? value) => m_command.Parameters.AddWithValue(parameterName, value);
+    void ISqlCommand.AddParameterWithValue(string parameterName, object? value) => m_command.Parameters.AddWithValue(parameterName, value);
 
-    public void Close()
+    void ISqlCommand.Close()
     {
         m_command.Dispose();
     }

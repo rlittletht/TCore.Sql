@@ -31,7 +31,7 @@ public class Sql: ISql
     public bool InTransaction => m_transaction != null;
 
     private readonly SqlConnection? m_connection;
-    private SqlTransaction? m_transaction;
+    private ISqlTransaction? m_transaction;
 
     public Sql()
     {
@@ -154,23 +154,23 @@ public class Sql: ISql
         }
     }
 
-    public void ExecuteNonQuery(
+    void ISql.ExecuteNonQuery(
         SqlCommandTextInit cmdText,
-        CustomizeCommandDelegate? customizeParams = null)
+        CustomizeCommandDelegate? customizeParams)
     {
-        ExecuteNonQuery(cmdText.CommandText, customizeParams, cmdText.Aliases);
+        ((ISql)this).ExecuteNonQuery(cmdText.CommandText, customizeParams, cmdText.Aliases);
     }
 
     /*----------------------------------------------------------------------------
         %%Function: ExecuteNonQuery
         %%Qualified: TCore.Sql.ExecuteNonQuery
     ----------------------------------------------------------------------------*/
-    public void ExecuteNonQuery(
+    void ISql.ExecuteNonQuery(
         string commandText,
-        CustomizeCommandDelegate? customizeParams = null,
-        TableAliases? aliases = null)
+        CustomizeCommandDelegate? customizeParams,
+        TableAliases? aliases)
     {
-        ISqlCommand sqlcmd = CreateCommand();
+        ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
 
         try
         {
@@ -251,14 +251,14 @@ public class Sql: ISql
 
            Execute the scalar command, returning the result.  
     ----------------------------------------------------------------------------*/
-    public int NExecuteScalar(SqlCommandTextInit cmdText)
+    int ISql.NExecuteScalar(SqlCommandTextInit cmdText)
     {
         return NExecuteScalar(cmdText.CommandText, cmdText.Aliases);
     }
 
     private int NExecuteScalar(string sQuery, TableAliases? aliases = null)
     {
-        ISqlCommand sqlcmd = CreateCommand();
+        ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
 
         try
         {
@@ -279,14 +279,14 @@ public class Sql: ISql
 
         Execute the scalar command, returning the result.  
     ----------------------------------------------------------------------------*/
-    public string SExecuteScalar(SqlCommandTextInit cmdText)
+    string ISql.SExecuteScalar(SqlCommandTextInit cmdText)
     {
         return SExecuteScalar(cmdText.CommandText, cmdText.Aliases);
     }
 
     private string SExecuteScalar(string sQuery, TableAliases? aliases = null)
     {
-        ISqlCommand sqlcmd = CreateCommand();
+        ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
 
         try
         {
@@ -305,7 +305,7 @@ public class Sql: ISql
         %%Function: DttmExecuteScalar
         %%Qualified: TCore.Sql.DttmExecuteScalar
     ----------------------------------------------------------------------------*/
-    public DateTime DttmExecuteScalar(SqlCommandTextInit cmdText)
+    DateTime ISql.DttmExecuteScalar(SqlCommandTextInit cmdText)
     {
         return DttmExecuteScalar(cmdText.CommandText, cmdText.Aliases);
     }
@@ -313,7 +313,7 @@ public class Sql: ISql
 
     private DateTime DttmExecuteScalar(string sQuery, TableAliases? aliases = null)
     {
-        ISqlCommand sqlcmd = CreateCommand();
+        ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
         try
         {
             sqlcmd.CommandText = aliases?.ExpandAliases(sQuery) ?? sQuery;
@@ -338,7 +338,7 @@ public class Sql: ISql
         %%Contact: rlittle
 
     ----------------------------------------------------------------------------*/
-    public void BeginTransaction()
+    void ISql.BeginTransaction()
     {
         if (InTransaction)
             throw new SqlExceptionInTransaction("cannot nest transactions");
@@ -346,13 +346,13 @@ public class Sql: ISql
         m_transaction = new SqlTransaction(Connection.BeginTransaction());
     }
 
-    public void BeginExclusiveTransaction() => throw new SqlExceptionNotImplementedInThisClient();
+    void ISql.BeginExclusiveTransaction() => throw new SqlExceptionNotImplementedInThisClient();
 
     /*----------------------------------------------------------------------------
         %%Function: Rollback
         %%Qualified: TCore.Sql.Rollback
     ----------------------------------------------------------------------------*/
-    public void Rollback()
+    void ISql.Rollback()
     {
         try
         {
@@ -389,7 +389,6 @@ public class Sql: ISql
     }
     #endregion
 
-
     ISqlReader ISql.CreateReader()
     {
         return new SqlReader(this);
@@ -399,7 +398,7 @@ public class Sql: ISql
         %%Function: CreateCommand
         %%Qualified: TCore.Sql.CreateCommand
     ----------------------------------------------------------------------------*/
-    public ISqlCommand CreateCommand()
+    ISqlCommand ISql.CreateCommand()
     {
         return CreateCommandInternal();
     }
@@ -409,38 +408,23 @@ public class Sql: ISql
         return new SqlCommand(Connection.CreateCommand());
     }
 
-    /*----------------------------------------------------------------------------
-        %%Function: ExecuteReader
-        %%Qualified: TCore.Sql.ExecuteReader
-    ----------------------------------------------------------------------------*/
-    public void ExecuteReader(
-        string sQuery,
-        out SqlReader sqlr,
-        string sResourceConnString,
-        TableAliases? aliases = null)
-    {
-        sqlr = new SqlReader(this);
-
-        sqlr.ExecuteQuery(sQuery, sResourceConnString, null, aliases);
-    }
-
     #region Queries
 
     /*----------------------------------------------------------------------------
         %%Function: ExecuteDelegatedQuery
         %%Qualified: TCore.Sql.SqlClient.Sql.ExecuteDelegatedQuery<T>
     ----------------------------------------------------------------------------*/
-    public T ExecuteDelegatedQuery<T>(
+    T ISql.ExecuteDelegatedQuery<T>(
         Guid crids,
         string query,
         ISqlReader.DelegateReader<T> delegateReader,
-        TableAliases? aliases = null,
-        CustomizeCommandDelegate? customizeDelegate = null) where T : new()
+        TableAliases? aliases,
+        CustomizeCommandDelegate? customizeDelegate)
     {
         if (delegateReader == null)
             throw new Exception("must provide delegate reader");
 
-        ISqlReader sqlr = ExecuteQuery(crids, query, aliases, customizeDelegate);
+        ISqlReader sqlr = ((ISql)this).ExecuteQuery(crids, query, aliases, customizeDelegate);
 
         try
         {
@@ -470,11 +454,11 @@ public class Sql: ISql
 
         Execute the given query and return an ISqlReader for it
     ----------------------------------------------------------------------------*/
-    public ISqlReader ExecuteQuery(
+    ISqlReader ISql.ExecuteQuery(
         Guid crids,
         string query,
-        TableAliases? aliases = null,
-        CustomizeCommandDelegate? customizeDelegate = null)
+        TableAliases? aliases,
+        CustomizeCommandDelegate? customizeDelegate)
     {
         SqlSelect selectTags = new SqlSelect();
 
@@ -497,7 +481,7 @@ public class Sql: ISql
         }
         catch
         {
-            sqlr?.Close();
+            ((ISqlReader?)sqlr)?.Close();
             throw;
         }
     }
@@ -510,13 +494,13 @@ public class Sql: ISql
         Guid crids,
         string sQuery,
         ISqlReader.DelegateMultiSetReader<T> delegateReader,
-        TableAliases? aliases = null,
-        CustomizeCommandDelegate? customizeDelegate = null) where T : new()
+        TableAliases? aliases,
+        CustomizeCommandDelegate? customizeDelegate)
     {
         if (delegateReader == null)
             throw new Exception("must provide delegate reader");
 
-        ISqlReader reader = ExecuteQuery(crids, sQuery, aliases, customizeDelegate);
+        ISqlReader reader = ((ISql)this).ExecuteQuery(crids, sQuery, aliases, customizeDelegate);
         
         try
         {
