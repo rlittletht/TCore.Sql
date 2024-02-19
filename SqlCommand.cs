@@ -6,7 +6,7 @@ namespace TCore.SqlClient;
 public class SqlCommand : ISqlCommand
 {
     private readonly Microsoft.Data.SqlClient.SqlCommand m_command;
-    private ISqlTransaction? m_transaction;
+    private SqlTransaction? m_transaction;
 
     string ISqlCommand.CommandText
     {
@@ -17,7 +17,11 @@ public class SqlCommand : ISqlCommand
     ISqlTransaction? ISqlCommand.Transaction
     {
         get => m_transaction;
-        set => m_transaction = value;
+        set
+        {
+            m_transaction = value as SqlTransaction;
+            m_command.Transaction = m_transaction?._Transaction;
+        }
     }
 
     ISqlReader ISqlCommand.ExecuteReader() => new SqlReader(m_command.ExecuteReader());
