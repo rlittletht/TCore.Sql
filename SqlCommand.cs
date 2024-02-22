@@ -14,6 +14,12 @@ public class SqlCommand : ISqlCommand
         set => m_command.CommandText = value;
     }
 
+    int ISqlCommand.CommandTimeout
+    {
+        get => m_command.CommandTimeout;
+        set => m_command.CommandTimeout = value;
+    }
+
     ISqlTransaction? ISqlCommand.Transaction
     {
         get => m_transaction;
