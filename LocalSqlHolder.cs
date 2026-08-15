@@ -30,31 +30,48 @@ public class LocalSqlHolder: ISql
     public ISqlCommand CreateCommand() => m_sql.CreateCommand();
     public ISqlReader CreateReader() => m_sql.CreateReader();
 
-    public void ExecuteNonQuery(string commandText, CustomizeCommandDelegate? customizeParams = null, TableAliases? aliases = null)
+    public int ExecuteNonQuery(string commandText, CustomizeCommandDelegate? customizeParams = null, TableAliases? aliases = null)
     {
-        m_sql.ExecuteNonQuery(commandText, customizeParams, aliases);
+        return m_sql.ExecuteNonQuery(commandText, customizeParams, aliases);
     }
 
-    public void ExecuteNonQuery(SqlCommandTextInit commandText, CustomizeCommandDelegate? customizeParams = null)
+    public int ExecuteNonQuery(SqlCommandTextInit commandText, CustomizeCommandDelegate? customizeParams = null)
     {
-        m_sql.ExecuteNonQuery(commandText, customizeParams);
+        return m_sql.ExecuteNonQuery(commandText, customizeParams);
     }
 
     public ISqlReader ExecuteQuery(
         Guid crids, string query, TableAliases? aliases = null, CustomizeCommandDelegate? customizeDelegate = null) =>
         m_sql.ExecuteQuery(crids, query, aliases, customizeDelegate);
 
+
+    public ISqlReader ExecuteQuery(
+        Guid crids, SqlCommandTextInit commandText, CustomizeCommandDelegate? customizeDelegate = null) =>
+        m_sql.ExecuteQuery(crids, commandText.CommandText, commandText.Aliases, customizeDelegate);
+
     public T ExecuteDelegatedQuery<T>(
-        Guid crids, string query, ISqlReader.DelegateReader<T> delegateReader, TableAliases? aliases = null, CustomizeCommandDelegate? customizeDelegate = null) where T : new() =>
+        Guid crids, SqlCommandTextInit commandText, ISqlReader.DelegateReader<T> delegateReader, CustomizeCommandDelegate? customizeDelegate = null) where T : new() =>
+        m_sql.ExecuteDelegatedQuery(crids, commandText.CommandText, delegateReader, commandText.Aliases, customizeDelegate);
+
+    public T ExecuteDelegatedQuery<T>(
+        Guid crids, string query, ISqlReader.DelegateReader<T> delegateReader, TableAliases? aliases = null, CustomizeCommandDelegate? customizeDelegate = null)
+        where T : new() =>
         m_sql.ExecuteDelegatedQuery(crids, query, delegateReader, aliases, customizeDelegate);
 
     public T ExecuteMultiSetDelegatedQuery<T>(Guid crids, string sQuery, ISqlReader.DelegateMultiSetReader<T> delegateReader, TableAliases? aliases = null, CustomizeCommandDelegate? customizeDelegate = null) where T : new() => m_sql.ExecuteMultiSetDelegatedQuery(crids, sQuery, delegateReader, aliases, customizeDelegate);
 
-    public string SExecuteScalar(SqlCommandTextInit cmdText) => m_sql.SExecuteScalar(cmdText);
+    public T ExecuteMultiSetDelegatedQuery<T>(
+        Guid crids, SqlCommandTextInit commandText, ISqlReader.DelegateMultiSetReader<T> delegateReader,
+        CustomizeCommandDelegate? customizeDelegate = null) where T : new() =>
+        m_sql.ExecuteMultiSetDelegatedQuery(crids, commandText.CommandText, delegateReader, commandText.Aliases, customizeDelegate);
 
-    public int NExecuteScalar(SqlCommandTextInit cmdText) => m_sql.NExecuteScalar(cmdText);
+    public string SExecuteScalar(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams = null) => m_sql.SExecuteScalar(cmdText, customizeParams);
 
-    public DateTime DttmExecuteScalar(SqlCommandTextInit cmdText) => m_sql.DttmExecuteScalar(cmdText);
+    public int NExecuteScalar(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams = null) => m_sql.NExecuteScalar(cmdText, customizeParams);
+
+    public T TExecuteScalar<T>(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams = null) => m_sql.TExecuteScalar<T>(cmdText, customizeParams);
+
+    public DateTime DttmExecuteScalar(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams = null) => m_sql.DttmExecuteScalar(cmdText, customizeParams);
 
     public void BeginExclusiveTransaction()
     {

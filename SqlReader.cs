@@ -143,6 +143,7 @@ public class SqlReader: ISqlReader
     double ISqlReader.GetDouble(int index) => _Reader.GetDouble(index);
     Int64 ISqlReader.GetInt64(int index) => _Reader.GetInt64(index);
     DateTime ISqlReader.GetDateTime(int index) => _Reader.GetDateTime(index);
+    bool ISqlReader.GetBoolean(int index) => _Reader.GetBoolean(index);
 
     Int16? ISqlReader.GetNullableInt16(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt16(index);
     Int32? ISqlReader.GetNullableInt32(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt32(index);
@@ -151,6 +152,7 @@ public class SqlReader: ISqlReader
     double? ISqlReader.GetNullableDouble(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDouble(index);
     Int64? ISqlReader.GetNullableInt64(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetInt64(index);
     DateTime? ISqlReader.GetNullableDateTime(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetDateTime(index);
+    bool? ISqlReader.GetNullableBoolean(int index) => _Reader.IsDBNull(index) ? null : _Reader.GetBoolean(index);
 
     bool ISqlReader.IsDBNull(int index) => _Reader.IsDBNull(index);
 

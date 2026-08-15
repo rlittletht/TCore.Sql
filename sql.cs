@@ -15,7 +15,6 @@ using TCore.SqlCore;
 
 namespace TCore.SqlClient;
 
-
 // ===============================================================================
 //  I  Q U E R Y  R E S U L T 
 // ===============================================================================
@@ -24,7 +23,7 @@ public interface IQueryResult
     bool FAddResultRow(ISqlReader sqlr, int iRecordSet);
 }
 
-public class Sql: ISql
+public class Sql : ISql
 {
     SqlConnection Connection => m_connection ?? throw new SqlExceptionNoConnection();
     public ISqlTransaction? Transaction => m_transaction;
@@ -36,7 +35,7 @@ public class Sql: ISql
     public Sql()
     {
         m_connection = null;
-        m_transaction = null; 
+        m_transaction = null;
     }
 
     public Sql(SqlConnection? connection, SqlTransaction? transaction)
@@ -45,7 +44,7 @@ public class Sql: ISql
         m_transaction = transaction;
     }
 
-    #region Connection Management
+#region Connection Management
 
     /*----------------------------------------------------------------------------
         %%Function: OpenConnection
@@ -105,9 +104,10 @@ public class Sql: ISql
 
     void ISql.Close() => Close();
 
-    #endregion
+#endregion
 
-    #region Execute Non-Queries
+#region Execute Non-Queries
+
     /*----------------------------------------------------------------------------
         %%Function: ExecuteNonQuery
         %%Qualified: TCore.Sql.ExecuteNonQuery
@@ -127,7 +127,7 @@ public class Sql: ISql
 
         Execute the given non query.  There is only a failed/success response
     ----------------------------------------------------------------------------*/
-    private static void ExecuteNonQuery(
+    private static int ExecuteNonQuery(
         ISql? sql,
         string query,
         string sResourceConnString,
@@ -145,7 +145,7 @@ public class Sql: ISql
                 customizeParams(sqlcmd);
 
             sqlcmd.Transaction = sql.Transaction;
-            sqlcmd.ExecuteNonQuery();
+            return sqlcmd.ExecuteNonQuery();
         }
         finally
         {
@@ -154,18 +154,18 @@ public class Sql: ISql
         }
     }
 
-    void ISql.ExecuteNonQuery(
+    int ISql.ExecuteNonQuery(
         SqlCommandTextInit cmdText,
         CustomizeCommandDelegate? customizeParams)
     {
-        ((ISql)this).ExecuteNonQuery(cmdText.CommandText, customizeParams, cmdText.Aliases);
+        return ((ISql)this).ExecuteNonQuery(cmdText.CommandText, customizeParams, cmdText.Aliases);
     }
 
     /*----------------------------------------------------------------------------
         %%Function: ExecuteNonQuery
         %%Qualified: TCore.Sql.ExecuteNonQuery
     ----------------------------------------------------------------------------*/
-    void ISql.ExecuteNonQuery(
+    int ISql.ExecuteNonQuery(
         string commandText,
         CustomizeCommandDelegate? customizeParams,
         TableAliases? aliases)
@@ -180,7 +180,7 @@ public class Sql: ISql
 
             if (Transaction != null)
                 sqlcmd.Transaction = Transaction;
-            sqlcmd.ExecuteNonQuery();
+            return sqlcmd.ExecuteNonQuery();
         }
         finally
         {
@@ -206,9 +206,10 @@ public class Sql: ISql
     {
         ExecuteNonQuery(null, commandText, sResourceConnString, null, aliases);
     }
-    #endregion
 
-    #region Execute Scalars
+#endregion
+
+#region Execute Scalars
 
     private static int NExecuteScalar(
         ISql sql,
@@ -249,14 +250,19 @@ public class Sql: ISql
         %%Function: NExecuteScalar
         %%Qualified: TCore.Sql.NExecuteScalar
 
-           Execute the scalar command, returning the result.  
+           Execute the scalar command, returning the result.
     ----------------------------------------------------------------------------*/
-    int ISql.NExecuteScalar(SqlCommandTextInit cmdText)
+    int ISql.NExecuteScalar(
+        SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams)
     {
-        return NExecuteScalar(cmdText.CommandText, cmdText.Aliases);
+        return NExecuteScalar(cmdText.CommandText, cmdText.Aliases, customizeParams);
     }
 
-    private int NExecuteScalar(string sQuery, TableAliases? aliases = null)
+    /*----------------------------------------------------------------------------
+        %%Function: NExecuteScalar
+        %%Qualified: TCore.SqlClient.Sql.NExecuteScalar
+    ----------------------------------------------------------------------------*/
+    private int NExecuteScalar(string sQuery, TableAliases? aliases = null, CustomizeCommandDelegate? customizeParams = null)
     {
         ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
 
@@ -264,6 +270,8 @@ public class Sql: ISql
         {
             sqlcmd.CommandText = aliases?.ExpandAliases(sQuery) ?? sQuery;
             sqlcmd.Transaction = Transaction;
+
+            customizeParams?.Invoke(sqlcmd);
 
             return (int)sqlcmd.ExecuteScalar();
         }
@@ -277,14 +285,18 @@ public class Sql: ISql
         %%Function: SExecuteScalar
         %%Qualified: TCore.Sql.SExecuteScalar
 
-        Execute the scalar command, returning the result.  
+        Execute the scalar command, returning the result.
     ----------------------------------------------------------------------------*/
-    string ISql.SExecuteScalar(SqlCommandTextInit cmdText)
+    string ISql.SExecuteScalar(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams)
     {
-        return SExecuteScalar(cmdText.CommandText, cmdText.Aliases);
+        return SExecuteScalar(cmdText.CommandText, cmdText.Aliases, customizeParams);
     }
 
-    private string SExecuteScalar(string sQuery, TableAliases? aliases = null)
+    /*----------------------------------------------------------------------------
+        %%Function: SExecuteScalar
+        %%Qualified: TCore.SqlClient.Sql.SExecuteScalar
+    ----------------------------------------------------------------------------*/
+    private string SExecuteScalar(string sQuery, TableAliases? aliases = null, CustomizeCommandDelegate? customizeParams = null)
     {
         ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
 
@@ -292,8 +304,39 @@ public class Sql: ISql
         {
             sqlcmd.CommandText = aliases?.ExpandAliases(sQuery) ?? sQuery;
             sqlcmd.Transaction = this.Transaction;
+            customizeParams?.Invoke(sqlcmd);
 
             return (string)sqlcmd.ExecuteScalar();
+        }
+        finally
+        {
+            sqlcmd.Close();
+        }
+    }
+
+    /*----------------------------------------------------------------------------
+        %%Function: ISql.TExecuteScalar
+        %%Qualified: TCore.SqlClient.Sql.TCore.SqlCore.ISql.TExecuteScalar<T>
+    ----------------------------------------------------------------------------*/
+    T ISql.TExecuteScalar<T>(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams)
+    {
+        return TExecuteScalar<T>(cmdText.CommandText, cmdText.Aliases, customizeParams);
+    }
+
+    /*----------------------------------------------------------------------------
+        %%Function: TExecuteScalar
+        %%Qualified: TCore.SqlClient.Sql.TExecuteScalar<T>
+    ----------------------------------------------------------------------------*/
+    private T TExecuteScalar<T>(string sQuery, TableAliases? aliases = null, CustomizeCommandDelegate? customizeParams = null)
+    {
+        ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
+        try
+        {
+            sqlcmd.CommandText = aliases?.ExpandAliases(sQuery) ?? sQuery;
+            sqlcmd.Transaction = this.Transaction;
+            customizeParams?.Invoke(sqlcmd);
+
+            return (T)sqlcmd.ExecuteScalar();
         }
         finally
         {
@@ -305,19 +348,24 @@ public class Sql: ISql
         %%Function: DttmExecuteScalar
         %%Qualified: TCore.Sql.DttmExecuteScalar
     ----------------------------------------------------------------------------*/
-    DateTime ISql.DttmExecuteScalar(SqlCommandTextInit cmdText)
+    DateTime ISql.DttmExecuteScalar(SqlCommandTextInit cmdText, CustomizeCommandDelegate? customizeParams)
     {
-        return DttmExecuteScalar(cmdText.CommandText, cmdText.Aliases);
+        return DttmExecuteScalar(cmdText.CommandText, cmdText.Aliases, customizeParams);
     }
 
 
-    private DateTime DttmExecuteScalar(string sQuery, TableAliases? aliases = null)
+    /*----------------------------------------------------------------------------
+        %%Function: DttmExecuteScalar
+        %%Qualified: TCore.SqlClient.Sql.DttmExecuteScalar
+    ----------------------------------------------------------------------------*/
+    private DateTime DttmExecuteScalar(string sQuery, TableAliases? aliases = null, CustomizeCommandDelegate? customizeParams = null)
     {
         ISqlCommand sqlcmd = ((ISql)this).CreateCommand();
         try
         {
             sqlcmd.CommandText = aliases?.ExpandAliases(sQuery) ?? sQuery;
             sqlcmd.Transaction = this.Transaction;
+            customizeParams?.Invoke(sqlcmd);
 
             return (DateTime)sqlcmd.ExecuteScalar();
         }
@@ -327,9 +375,9 @@ public class Sql: ISql
         }
     }
 
-    #endregion
+#endregion
 
-    #region Transactions
+#region Transactions
 
     /* B E G I N  T R A N S A C T I O N */
     /*----------------------------------------------------------------------------
@@ -387,7 +435,8 @@ public class Sql: ISql
             m_transaction = null;
         }
     }
-    #endregion
+
+#endregion
 
     ISqlReader ISql.CreateReader()
     {
@@ -409,6 +458,15 @@ public class Sql: ISql
     }
 
     #region Queries
+
+    T ISql.ExecuteDelegatedQuery<T>(
+        Guid crids,
+        SqlCommandTextInit commandText,
+        ISqlReader.DelegateReader<T> delegateReader,
+        CustomizeCommandDelegate? customizeDelegate)
+    {
+        return ((ISql)this).ExecuteDelegatedQuery(crids, commandText.CommandText, delegateReader, commandText.Aliases, customizeDelegate);
+    }
 
     /*----------------------------------------------------------------------------
         %%Function: ExecuteDelegatedQuery
@@ -446,6 +504,14 @@ public class Sql: ISql
         {
             sqlr.Close();
         }
+    }
+
+    ISqlReader ISql.ExecuteQuery(
+        Guid crids,
+        SqlCommandTextInit commandText,
+        CustomizeCommandDelegate? customizeDelegate)
+    {
+        return ((ISql)this).ExecuteQuery(crids, commandText.CommandText, commandText.Aliases, customizeDelegate);
     }
 
     /*----------------------------------------------------------------------------
@@ -486,6 +552,15 @@ public class Sql: ISql
         }
     }
 
+    T ISql.ExecuteMultiSetDelegatedQuery<T>(
+        Guid crids,
+        SqlCommandTextInit commandText,
+        ISqlReader.DelegateMultiSetReader<T> delegateReader,
+        CustomizeCommandDelegate? customizeDelegate)
+    {
+        return ((ISql)this).ExecuteMultiSetDelegatedQuery(crids, commandText.CommandText, delegateReader, commandText.Aliases, customizeDelegate);
+    }
+
     /*----------------------------------------------------------------------------
         %%Function: ExecuteDelegatedQuery
         %%Qualified: TCore.SqlReader.ExecuteDelegatedQuery<T>
@@ -501,7 +576,7 @@ public class Sql: ISql
             throw new Exception("must provide delegate reader");
 
         ISqlReader reader = ((ISql)this).ExecuteQuery(crids, sQuery, aliases, customizeDelegate);
-        
+
         try
         {
             int recordSet = 0;
@@ -530,5 +605,6 @@ public class Sql: ISql
             reader.Close();
         }
     }
-    #endregion
+
+#endregion
 }
